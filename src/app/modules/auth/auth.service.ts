@@ -3,14 +3,14 @@ import { AppError } from "../../errors";
 import { httpStatus, jwtToken } from "../../utils";
 import { USER_ROLE } from "../user/user.constant";
 import { User } from "../user/user.model";
-import { TRegisterUser } from "./auth.interface";
+import { TLoginUser, TRegisterUser } from "./auth.interface";
 
 const registerUserIntoDB = async (payload: TRegisterUser) => {
   // checking if the user is exist
   const user = await User.isUserExistsByEmail(payload?.email);
 
   if (user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'This user is already exist!');
+    throw new AppError(httpStatus.NOT_FOUND, "This user is already exist!");
   }
 
   payload.role = USER_ROLE.USER;
@@ -45,8 +45,50 @@ const registerUserIntoDB = async (payload: TRegisterUser) => {
   };
 };
 
-const loginUserFromDB = async (payload: any) => {
-  console.log(payload);
+const loginUserFromDB = async (payload: TLoginUser) => {
+  // checking if the user is exist
+  const user = await User.isUserExistsByEmail(payload?.email);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "This user is not found!");
+  }
+
+  // checking if the user is blocked
+  const userStatus = user?.status;
+
+  if (userStatus === "BLOCKED") {
+    throw new AppError(httpStatus.FORBIDDEN, "This user is blocked!");
+  }
+
+  //checking if the password is correct
+  if (!(await User.isPasswordMatched(payload?.password, user?.password)))
+    throw new AppError(httpStatus.FORBIDDEN, "Password do not matched");
+
+  //create token and sent to the  client
+  const jwtPayload = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+  };
+
+  const accessToken = jwtToken.generateToken(
+    jwtPayload,
+    config.jwt.access_secret as string,
+    config.jwt.access_expires_in as string
+  );
+
+  const refreshToken = jwtToken.generateToken(
+    jwtPayload,
+    config.jwt.refresh_secret as string,
+    config.jwt.refresh_expires_in as string
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 export const AuthServices = {
