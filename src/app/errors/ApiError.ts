@@ -1,4 +1,4 @@
-export class AppError extends Error {
+export class ApiError extends Error {
   public statusCode: number;
 
   constructor(statusCode: number, message: string, stack = "") {

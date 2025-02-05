@@ -1,5 +1,5 @@
 import config from "../../config";
-import { AppError } from "../../errors";
+import { ApiError } from "../../errors";
 import { httpStatus, jwtToken } from "../../utils";
 import { USER_ROLE } from "../user/user.constant";
 import { User } from "../user/user.model";
@@ -10,7 +10,7 @@ const registerUserIntoDB = async (payload: TRegisterUser) => {
   const user = await User.isUserExistsByEmail(payload?.email);
 
   if (user) {
-    throw new AppError(httpStatus.NOT_FOUND, "This user is already exist!");
+    throw new ApiError(httpStatus.NOT_FOUND, "This user is already exist!");
   }
 
   payload.role = USER_ROLE.USER;
@@ -50,19 +50,19 @@ const loginUserFromDB = async (payload: TLoginUser) => {
   const user = await User.isUserExistsByEmail(payload?.email);
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "This user is not found!");
+    throw new ApiError(httpStatus.NOT_FOUND, "This user is not found!");
   }
 
   // checking if the user is blocked
   const userStatus = user?.status;
 
   if (userStatus === "BLOCKED") {
-    throw new AppError(httpStatus.FORBIDDEN, "This user is blocked!");
+    throw new ApiError(httpStatus.FORBIDDEN, "This user is blocked!");
   }
 
   //checking if the password is correct
   if (!(await User.isPasswordMatched(payload?.password, user?.password)))
-    throw new AppError(httpStatus.FORBIDDEN, "Password do not matched");
+    throw new ApiError(httpStatus.FORBIDDEN, "Password do not matched");
 
   //create token and sent to the  client
   const jwtPayload = {
