@@ -41,7 +41,6 @@ export const auth = (...requiredRoles: (keyof typeof USER_ROLE)[]) => {
     }
 
     req.user = decoded as JwtPayload;
-    console.log(req.user)
     next();
   });
 };
